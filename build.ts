@@ -150,7 +150,6 @@ const result = await build({
   sourcemap: "linked",
   define: {
     "process.env.NODE_ENV": JSON.stringify("production"),
-    "process.env.BUN_PUBLIC_DEVELOPER_TOKEN": JSON.stringify(process.env.BUN_PUBLIC_DEVELOPER_TOKEN),
   },
   ...cliConfig, // Merge in any CLI-provided options
 });

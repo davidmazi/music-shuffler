@@ -126,7 +126,7 @@ export const MusicKitProvider: React.FC<{ children: ReactNode }> = ({ children }
         setIsLoading(true);
         if (window.MusicKit) {
           const instance = await window.MusicKit.configure({
-            developerToken: process.env.BUN_PUBLIC_DEVELOPER_TOKEN,
+            developerToken: '', // We'll handle API calls through our secure proxy
             app: {
               name: 'Music Shuffler',
               build: '1.0.0',

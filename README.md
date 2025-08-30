@@ -49,7 +49,13 @@ This project was created using `bun init` in bun v1.2.18. [Bun](https://bun.sh) 
 
 ### Vercel (Recommended)
 
-This project is configured for easy deployment on Vercel:
+This project is configured for easy deployment on Vercel with **secure server-side API proxy**:
+
+**🔒 Security Features:**
+- Apple Music developer token is kept server-side only
+- All API requests go through secure serverless functions
+- No sensitive tokens exposed to client-side code
+- CORS properly configured for browser requests
 
 1. **Push your code to GitHub**
 2. **Connect to Vercel:**
@@ -64,7 +70,7 @@ This project is configured for easy deployment on Vercel:
 
 The following environment variables are required for production:
 
-- `BUN_PUBLIC_DEVELOPER_TOKEN`: Your Apple Music developer token from the Apple Developer Console
+- `APPLE_MUSIC_DEVELOPER_TOKEN`: Your Apple Music developer token from the Apple Developer Console (server-side only)
 
 ### Local Development
 
@@ -73,6 +79,6 @@ To run locally with environment variables:
 1. Create a `.env` file in the root directory
 2. Add your environment variables:
    ```bash
-   BUN_PUBLIC_DEVELOPER_TOKEN=your_token_here
+   APPLE_MUSIC_DEVELOPER_TOKEN=your_token_here
    ```
 3. Run `bun dev` to start the development server
