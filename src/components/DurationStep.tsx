@@ -7,12 +7,7 @@ import { motion, AnimatePresence, useMotionValue, useTransform, useSpring, useAn
 import { CountingNumber } from "@/components/animate-ui/text/counting-number"
 
 
-// Add type declarations for browser APIs
-declare global {
-    interface Navigator {
-        vibrate(pattern: number | number[]): boolean;
-    }
-}
+
 
 interface DurationStepProps {
     targetDuration: number[];
@@ -27,7 +22,6 @@ const DurationStep: React.FC<DurationStepProps> = ({
 }) => {
     // Animation states and refs
     const [isDragging, setIsDragging] = useState(false);
-    const [showParticles, setShowParticles] = useState(false);
     const [previousDuration, setPreviousDuration] = useState(targetDuration[0]);
     const buttonRef = useRef<any>(null);
     const sliderRef = useRef<any>(null);
@@ -48,15 +42,7 @@ const DurationStep: React.FC<DurationStepProps> = ({
 
     // Animation controls
     const numberAnimation = useAnimation();
-    const particleAnimation = useAnimation();
     const backgroundAnimation = useAnimation();
-
-    // Haptic feedback function
-    const triggerHaptic = () => {
-        if (typeof window !== 'undefined' && 'vibrate' in window.navigator) {
-            window.navigator.vibrate(50);
-        }
-    };
 
     // Update motion value when duration changes
     useEffect(() => {
@@ -79,24 +65,14 @@ const DurationStep: React.FC<DurationStepProps> = ({
     const handleSliderChange = (value: number[]) => {
         onDurationChange(value);
         setIsDragging(true);
-        triggerHaptic();
     };
 
     const handleSliderEnd = () => {
         setIsDragging(false);
-        // Trigger particle effect on release
-        particleAnimation.start({
-            scale: [0, 1.2, 0],
-            opacity: [0, 1, 0],
-            transition: { duration: 0.6, ease: "easeOut" }
-        });
     };
 
     // Handle start button interaction
     const handleStartClick = () => {
-        triggerHaptic();
-        setShowParticles(true);
-
         // Animate button with pop effect
         if (buttonRef.current) {
             buttonRef.current.style.transform = 'scale(0.95)';
@@ -107,11 +83,10 @@ const DurationStep: React.FC<DurationStepProps> = ({
             }, 150);
         }
 
-        // Trigger confetti effect
+        // Proceed to next step
         setTimeout(() => {
-            setShowParticles(false);
             onNext();
-        }, 800);
+        }, 300);
     };
 
     // Ambient background animation
@@ -138,38 +113,7 @@ const DurationStep: React.FC<DurationStepProps> = ({
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-gradient-to-r from-brand-primary/5 to-brand-secondary/5 rounded-full blur-2xl" />
             </motion.div>
 
-            {/* Particle Effects */}
-            <AnimatePresence>
-                {showParticles && (
-                    <div className="absolute inset-0 pointer-events-none">
-                        {Array.from({ length: 12 }, (_, i) => (
-                            <motion.div
-                                key={`particle-${Date.now()}-${i}`}
-                                initial={{
-                                    x: 0,
-                                    y: 0,
-                                    scale: 0,
-                                    opacity: 1,
-                                    rotate: 0
-                                }}
-                                animate={{
-                                    x: (Math.random() - 0.5) * 200,
-                                    y: (Math.random() - 0.5) * 200,
-                                    scale: [0, 1, 0],
-                                    opacity: [1, 1, 0],
-                                    rotate: 360
-                                }}
-                                transition={{
-                                    duration: 1.2,
-                                    delay: i * 0.05,
-                                    ease: "easeOut"
-                                }}
-                                className="absolute top-1/2 left-1/2 w-2 h-2 bg-gradient-to-r from-brand-primary to-brand-secondary rounded-full"
-                            />
-                        ))}
-                    </div>
-                )}
-            </AnimatePresence>
+
 
             <motion.div
                 initial={{ opacity: 0, y: 20 }}

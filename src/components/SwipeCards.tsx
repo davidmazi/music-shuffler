@@ -3,9 +3,9 @@ import { useSprings, animated, to as interpolate } from '@react-spring/web';
 import { useDrag } from 'react-use-gesture';
 import { MusicCard } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Music, Heart, Clock } from "lucide-react";
+import { Music, Clock } from "lucide-react";
 
-import { formatTime, type EnrichedRecommendationItem, getDisplayName, getArtworkUrl, getDuration, getArtistName } from '@/utils/musicUtils';
+import { formatTime, type EnrichedRecommendationItem, getDisplayName, getArtworkUrl, getDuration, getArtistName, getGenre } from '@/utils/musicUtils';
 
 interface SwipeCardProps {
     recommendations: EnrichedRecommendationItem[];
@@ -18,13 +18,20 @@ export interface SwipeCardRef {
 }
 
 // Helper functions for spring animations
-const to = (i: number) => ({
-    x: 0,
-    y: i * -4,
-    scale: 1,
-    rot: -10 + Math.random() * 20,
-    delay: i * 100,
-});
+const to = (i: number, totalCards: number) => {
+    // Calculate a dynamic offset to ensure cards stay visible
+    // When there are many cards, we need to position them higher
+    const maxOffset = Math.min(totalCards * 4, 60); // Cap the maximum offset
+    const baseOffset = totalCards > 10 ? -maxOffset / totalCards : -4;
+
+    return {
+        x: 0,
+        y: i * baseOffset,
+        scale: 1,
+        rot: -10 + Math.random() * 20,
+        delay: i * 100,
+    };
+};
 
 const from = (_i: number) => ({ x: 0, rot: 0, scale: 1.5, y: -1000 });
 
@@ -41,7 +48,7 @@ const SwipeCards = forwardRef<SwipeCardRef, SwipeCardProps>(({
 
     // Create springs for all recommendations
     const [props, api] = useSprings(recommendations.length, i => ({
-        ...to(i),
+        ...to(i, recommendations.length),
         from: from(i),
     }));
 
@@ -110,7 +117,7 @@ const SwipeCards = forwardRef<SwipeCardRef, SwipeCardProps>(({
         if (!down && gone.size === recommendations.length) {
             setTimeout(() => {
                 gone.clear();
-                api.start(i => to(i));
+                api.start(i => to(i, recommendations.length));
             }, 600);
         }
     });
@@ -120,10 +127,11 @@ const SwipeCards = forwardRef<SwipeCardRef, SwipeCardProps>(({
         const artworkUrl = getArtworkUrl(item);
         const displayName = getDisplayName(item);
         const artistName = getArtistName(item);
+        const genre = getGenre(item);
         const duration = getDuration(item);
 
         return (
-            <div className="h-full overflow-hidden rounded-xl shadow-2xl">
+            <div className="h-full mb-1.5 overflow-hidden rounded-xl shadow-2xl">
                 <div className="h-full flex flex-col">
                     {/* Artwork Section */}
                     <div className="flex-1 relative group">
@@ -151,12 +159,6 @@ const SwipeCards = forwardRef<SwipeCardRef, SwipeCardProps>(({
                                 </div>
                             )}
 
-                            {/* Like Button Overlay */}
-                            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/30">
-                                    <Heart className="w-5 h-5 text-white" />
-                                </div>
-                            </div>
                         </div>
                     </div>
 
@@ -165,6 +167,9 @@ const SwipeCards = forwardRef<SwipeCardRef, SwipeCardProps>(({
                         <h3 className="text-xl font-bold text-card-foreground mb-1 line-clamp-1">
                             {displayName}
                         </h3>
+                        <p className="text-muted-foreground mb-4 line-clamp-1">
+                            {genre}
+                        </p>
                         <p className="text-muted-foreground mb-4 line-clamp-1">
                             {artistName}
                         </p>

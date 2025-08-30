@@ -81,6 +81,13 @@ export function getArtistName(item: MusicKit.Resource): string {
 	);
 }
 
+export function getGenre(item: MusicKit.Resource): string {
+	return (
+		item.attributes.genreNames?.filter((g) => g !== "Musique").join(", ") ||
+		"Unknown Genre"
+	);
+}
+
 // Add a utility function for throttling requests
 async function delay(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
@@ -89,10 +96,16 @@ async function delay(ms: number): Promise<void> {
 export async function getRandomSongs(
 	recommendations: MusicKit.PersonalRecommendation[],
 	musicKit: MusicKit.MusicKitInstance,
-	count: number = 50,
+	count: number,
 ): Promise<MusicKit.Songs[]> {
-	// Extract all content items from recommendations
-	const allContentItems: Array<{ id: string; type: string; href: string }> = [];
+	// Extract all content items from recommendations with track counts
+	const allContentItems: Array<{
+		id: string;
+		type: string;
+		href: string;
+		trackCount: number;
+		contentHref: string; // The href to fetch individual tracks
+	}> = [];
 
 	for (const recommendation of recommendations) {
 		const contents = recommendation.relationships?.contents;
@@ -109,6 +122,8 @@ export async function getRandomSongs(
 								id: contentItem.id,
 								type: contentItem.type,
 								href: contentItem.href,
+								trackCount: contentItem.attributes?.trackCount || 0,
+								contentHref: contentItem.href,
 							});
 						}
 					}
@@ -122,72 +137,151 @@ export async function getRandomSongs(
 						id: contentItem.id,
 						type: contentItem.type,
 						href: contentItem.href,
+						trackCount: contentItem.attributes?.trackCount || 0,
+						contentHref: contentItem.href,
 					});
 				}
 			}
 		}
 	}
 
-	// Randomly shuffle and pick items to process
-	const shuffled = [...allContentItems].sort(() => Math.random() - 0.5);
+	// Create song placeholders based on track counts
+	const songPlaceholders: Array<{
+		trackIndex: number;
+		contentHref: string;
+		type: string;
+		contentId: string;
+	}> = [];
 
-	// Limit API requests to a reasonable number (e.g., 10-15 items should give us enough songs)
-	const selectedItems = shuffled.slice(
-		0,
-		Math.min(count, allContentItems.length),
+	for (const item of allContentItems) {
+		if (item.trackCount > 0) {
+			for (let i = 0; i < item.trackCount; i++) {
+				songPlaceholders.push({
+					trackIndex: i,
+					contentHref: item.contentHref,
+					type: item.type,
+					contentId: item.id,
+				});
+			}
+		}
+	}
+
+	console.log(
+		`🎵 Created ${songPlaceholders.length} song placeholders from ${allContentItems.length} content items`,
 	);
 
-	// Process items in small batches to balance speed and rate limiting
-	const allSongs: MusicKit.Songs[] = [];
-	const batchSize = 3; // Process 3 items at a time
+	// Shuffle the song placeholders using Fisher-Yates algorithm
+	const shuffledPlaceholders = [...songPlaceholders];
+	for (let i = shuffledPlaceholders.length - 1; i > 0; i--) {
+		const j = Math.floor(Math.random() * (i + 1));
+		[shuffledPlaceholders[i], shuffledPlaceholders[j]] = [
+			shuffledPlaceholders[j],
+			shuffledPlaceholders[i],
+		];
+	}
 
-	for (let i = 0; i < selectedItems.length; i += batchSize) {
-		const batch = selectedItems.slice(i, i + batchSize);
+	// Take only the number of songs we need
+	const selectedPlaceholders = shuffledPlaceholders.slice(0, count);
+
+	console.log(`🎵 Selected ${selectedPlaceholders.length} songs to fetch`);
+
+	// Group placeholders by content to batch fetch efficiently
+	const placeholdersByContent = new Map<
+		string,
+		Array<{
+			trackIndex: number;
+			contentHref: string;
+			type: string;
+			contentId: string;
+		}>
+	>();
+
+	for (const placeholder of selectedPlaceholders) {
+		const key = `${placeholder.type}-${placeholder.contentId}`;
+		if (!placeholdersByContent.has(key)) {
+			placeholdersByContent.set(key, []);
+		}
+		placeholdersByContent.get(key)!.push(placeholder);
+	}
+
+	// Fetch songs in batches
+	const allSongs: MusicKit.Songs[] = [];
+	const batchSize = 5; // Process 5 content items at a time
+	const contentKeys = Array.from(placeholdersByContent.keys());
+
+	for (let i = 0; i < contentKeys.length; i += batchSize) {
+		const batchKeys = contentKeys.slice(i, i + batchSize);
 
 		// Process batch in parallel
-		const batchPromises = batch.map(async (item) => {
+		const batchPromises = batchKeys.map(async (key) => {
+			const placeholders = placeholdersByContent.get(key)!;
+			const firstPlaceholder = placeholders[0];
+
 			try {
-				let songs: MusicKit.Songs[] = [];
+				const songs: MusicKit.Songs[] = [];
 
-				if (item.type === "albums") {
-					// Try with include parameter to get tracks
-					const { data } = (await musicKit.api.music(item.href)) as any;
+				if (firstPlaceholder.type === "albums") {
+					// Fetch album with tracks
+					const { data } = (await musicKit.api.music(
+						firstPlaceholder.contentHref,
+						{
+							include: ["tracks"],
+						},
+					)) as any;
 
-					console.log(`🎵 Album API response for ${item.id}:`, data);
+					console.log(
+						`🎵 Album API response for ${firstPlaceholder.contentId}:`,
+						data,
+					);
 
 					// The actual album data is in response.data[0]
 					const album = data?.data[0] as MusicKit.Albums;
-					console.log(
-						"🚀\x1b[5m\x1b[32m ~ DM\x1b[0m\x1b[36m ~ musicUtils.ts:149 ~ getRandomSongs ~ album\x1b[0m",
-						album,
-					);
-
-					songs = (album?.relationships?.tracks?.data?.filter(
+					const allAlbumSongs = (album?.relationships?.tracks?.data?.filter(
 						(track) => track.type === "songs",
 					) || []) as MusicKit.Songs[];
-				} else if (item.type === "playlists") {
-					// Try with include parameter to get tracks
-					const { data } = (await musicKit.api.music(item.href, {
-						include: ["tracks"],
-					})) as any;
 
-					console.log(`🎵 Playlist API response for ${item.id}:`, data);
+					// Extract only the songs we need based on trackIndex
+					for (const placeholder of placeholders) {
+						if (allAlbumSongs[placeholder.trackIndex]) {
+							songs.push(allAlbumSongs[placeholder.trackIndex]);
+						}
+					}
+				} else if (firstPlaceholder.type === "playlists") {
+					// Fetch playlist with tracks
+					const { data } = (await musicKit.api.music(
+						firstPlaceholder.contentHref,
+						{
+							include: ["tracks"],
+						},
+					)) as any;
+
+					console.log(
+						`🎵 Playlist API response for ${firstPlaceholder.contentId}:`,
+						data,
+					);
 
 					// The actual playlist data is in response.data[0]
 					const playlist = data?.data[0] as MusicKit.Playlists;
+					const allPlaylistSongs =
+						(playlist?.relationships?.tracks?.data?.filter(
+							(track) => track.type === "songs",
+						) || []) as MusicKit.Songs[];
 
-					songs = (playlist?.relationships?.tracks?.data?.filter(
-						(track) => track.type === "songs",
-					) || []) as MusicKit.Songs[];
+					// Extract only the songs we need based on trackIndex
+					for (const placeholder of placeholders) {
+						if (allPlaylistSongs[placeholder.trackIndex]) {
+							songs.push(allPlaylistSongs[placeholder.trackIndex]);
+						}
+					}
 				}
 
 				console.log(
-					`🎵 Got ${songs.length} songs from ${item.type}: ${item.id}`,
+					`🎵 Got ${songs.length} songs from ${firstPlaceholder.type}: ${firstPlaceholder.contentId}`,
 				);
 				return songs;
 			} catch (error) {
 				console.warn(
-					`Failed to fetch details for ${item.type} ${item.id}:`,
+					`Failed to fetch details for ${firstPlaceholder.type} ${firstPlaceholder.contentId}:`,
 					error,
 				);
 				return [];
@@ -198,23 +292,16 @@ export async function getRandomSongs(
 		const batchResults = await Promise.all(batchPromises);
 		allSongs.push(...batchResults.flat());
 
-		// If we have enough songs, we can stop early
-		if (allSongs.length >= count) {
-			console.log(`🎵 Got enough songs (${allSongs.length}), stopping early`);
-			break;
-		}
-
-		// Small delay between batches (reduced from 150ms to 50ms)
-		if (i + batchSize < selectedItems.length) {
+		// Small delay between batches
+		if (i + batchSize < contentKeys.length) {
 			await delay(50);
 		}
 	}
 
 	console.log("🎵 Total songs collected:", allSongs.length);
 
-	// Randomly shuffle and return the requested number of songs
-	const shuffledSongs = [...allSongs].sort(() => Math.random() - 0.5);
-	const result = shuffledSongs.slice(0, count);
+	// Shuffle the final result to ensure randomness
+	const result = [...allSongs].sort(() => Math.random() - 0.5).slice(0, count);
 
 	console.log("🎵 Final result:", result.length, "songs");
 	return result;
@@ -242,12 +329,7 @@ export async function fetchRecommendations({
 		};
 
 		// Get enriched recommendation items
-		const randomSongs = await getRandomSongs(res.data.data, musicKit, 50);
-
-		console.debug(
-			"🚀\x1b[5m\x1b[32m ~ DM\x1b[0m\x1b[36m ~ fetchRecommendations ~ enrichedItems\x1b[0m",
-			randomSongs,
-		);
+		const randomSongs = await getRandomSongs(res.data.data, musicKit, 20);
 
 		return {
 			recommendedItems: randomSongs,
