@@ -1,90 +1,115 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { GlassCard, CardContent } from "@/components/ui/card"
-import { CheckCircle, Play, Music } from "lucide-react"
+import { CheckCircle, Plus, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { motion } from "framer-motion"
+import { useMusicKit } from "@/contexts/MusicKitContext"
+import { type EnrichedRecommendationItem, createPlaylist } from "@/utils/musicUtils"
 
 interface CompleteStepProps {
     onReset: () => void;
     playlistName?: string;
+    selectedItems: EnrichedRecommendationItem[];
 }
 
 const CompleteStep: React.FC<CompleteStepProps> = ({
     onReset,
-    playlistName = "RockMyRide"
+    playlistName = "RockMyRide",
+    selectedItems
 }) => {
+    const { musicKit, handleApiError } = useMusicKit();
+
+    const handleAddToLibrary = useCallback(async () => {
+        if (!musicKit || selectedItems.length === 0) {
+            console.error('MusicKit not available or no items selected');
+            return;
+        }
+
+        try {
+            const result = await createPlaylist({
+                musicKit,
+                handleApiError,
+                playlistName,
+                selectedItems,
+            });
+
+            if (result.success) {
+                // Show success message
+                window.alert(`Playlist "${playlistName}" created successfully with ${selectedItems.length} songs!`);
+            } else {
+                // Show error message
+                window.alert(result.error);
+            }
+
+        } catch (error) {
+            console.error('Failed to create playlist:', error);
+            await handleApiError(error);
+        }
+    }, [musicKit, selectedItems, playlistName, handleApiError]);
+
     return (
         <div className="flex items-center justify-center min-h-screen p-6">
             <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.6, type: "spring" }}
-                className="w-full max-w-md"
+                className="w-full max-w-lg"
             >
-                <GlassCard variant="elevated">
-                    <CardContent className="p-8 text-center">
-                        {/* Success Icon */}
+                <GlassCard variant="elevated" className="rounded-2xl">
+                    <CardContent className="p-10 text-center">
+                        {/* Header with Checkmark */}
                         <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                            className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-lg shadow-green-500/25"
-                        >
-                            <CheckCircle className="w-10 h-10 text-white" />
-                        </motion.div>
-
-                        {/* Title */}
-                        <motion.h2
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.4 }}
-                            className="text-2xl font-bold text-card-foreground mb-3"
+                            transition={{ delay: 0.2 }}
+                            className="flex items-center justify-center gap-3 mb-6"
                         >
-                            Playlist Created!
-                        </motion.h2>
+                            <motion.div
+                                initial={{ scale: 0, rotate: -180 }}
+                                animate={{ scale: 1, rotate: 0 }}
+                                transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
+                                className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-lg shadow-green-500/25"
+                            >
+                                <CheckCircle className="w-6 h-6 text-white" />
+                            </motion.div>
+                            <h2 className="text-3xl font-bold text-card-foreground">
+                                <span className="font-semibold text-card-foreground">{playlistName}</span>
+                            </h2>
+                        </motion.div>
 
-                        {/* Description */}
+                        {/* Success Message */}
                         <motion.p
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.6 }}
-                            className="text-muted-foreground mb-8"
+                            transition={{ delay: 0.4 }}
+                            className="text-lg text-muted-foreground mb-10 leading-relaxed"
                         >
-                            "{playlistName}" has been successfully created in your Apple Music library.
+                            is ready to be added to your Apple Music library!
                         </motion.p>
 
-                        {/* Playlist Preview */}
+                        {/* Action Buttons */}
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.8 }}
-                            className="mb-8 p-4 glass-card rounded-xl border border-border/30"
-                        >
-                            <div className="flex items-center gap-3">
-                                <div className="w-12 h-12 bg-gradient-to-br from-brand-primary to-brand-secondary rounded-lg flex items-center justify-center">
-                                    <Music className="w-6 h-6 text-white" />
-                                </div>
-                                <div className="text-left">
-                                    <div className="font-semibold text-card-foreground">{playlistName}</div>
-                                    <div className="text-sm text-muted-foreground">Ready to play</div>
-                                </div>
-                            </div>
-                        </motion.div>
-
-                        {/* Action Button */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 1.0 }}
-                            className="flex flex-col sm:flex-row gap-3 justify-center"
+                            className="flex flex-col sm:flex-row gap-4 justify-center"
                         >
                             <Button
-                                onClick={onReset}
+                                onClick={handleAddToLibrary}
                                 variant="brand"
-                                className="font-semibold"
+                                className="font-semibold flex-1 sm:flex-none"
                                 size="lg"
                             >
-                                <Play className="w-4 h-4 mr-2" />
+                                <Plus className="w-5 h-5 mr-2" />
+                                Add to Library
+                            </Button>
+                            <Button
+                                onClick={onReset}
+                                variant="outline"
+                                className="font-semibold flex-1 sm:flex-none"
+                                size="lg"
+                            >
+                                <RotateCcw className="w-5 h-5 mr-2" />
                                 Create Another
                             </Button>
                         </motion.div>

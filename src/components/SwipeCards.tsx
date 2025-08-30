@@ -185,7 +185,7 @@ const SwipeCards = forwardRef<SwipeCardRef, SwipeCardProps>(({
                                 variant="secondary"
                                 className="bg-brand-primary/20 text-brand-primary border-brand-primary/30 capitalize font-medium"
                             >
-                                {item.type.replace('-', ' ')}
+                                {genre}
                             </Badge>
                         </div>
                     </div>

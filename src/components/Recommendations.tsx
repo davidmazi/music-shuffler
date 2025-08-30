@@ -4,6 +4,7 @@ import { useMusicKit } from "@/contexts/MusicKitContext";
 import {
 	type EnrichedRecommendationItem,
 	fetchRecommendations,
+	getDuration,
 } from "@/utils/musicUtils";
 import DurationStep from "./DurationStep";
 import CompleteStep from "./CompleteStep";
@@ -27,6 +28,7 @@ const Recommendations: React.FC = () => {
 	const [totalDuration, setTotalDuration] = useState(0);
 	const [loading, setLoading] = useState<boolean>(false);
 	const [error, setError] = useState<string | null>(null);
+	const [swipedCount, setSwipedCount] = useState<number>(0);
 
 	const targetSeconds = targetDuration[0] * 60;
 
@@ -42,7 +44,10 @@ const Recommendations: React.FC = () => {
 				setLoading(true);
 				setError(null);
 
-				const result = await fetchRecommendations({ musicKit, handleApiError });
+				const result = await fetchRecommendations({
+					musicKit,
+					handleApiError
+				});
 
 				if (result.error) {
 					setError(result.error);
@@ -61,17 +66,20 @@ const Recommendations: React.FC = () => {
 		if (step === "swipe") {
 			fetchRecommendationsData();
 		}
-	}, [musicKit, isAuthorized, step, handleApiError]); // Removed handleApiError from dependencies
+	}, [musicKit, isAuthorized, step, handleApiError]);
 
 
 
 	const handleSwipe = useCallback(
 		(direction: "left" | "right", item: EnrichedRecommendationItem) => {
+			// Increment swiped count
+			setSwipedCount(prev => prev + 1);
+
 			if (direction === "right") {
 				setSelectedItems((prev) => [...prev, item]);
 				// For now, we'll use a default duration since we don't have individual song durations yet
 				// This will be updated when we flatten the songs from albums/playlists
-				setTotalDuration((prev) => prev + 180); // Default 3 minutes per item
+				setTotalDuration((prev) => prev + getDuration(item));
 			}
 		},
 		[],
@@ -82,7 +90,31 @@ const Recommendations: React.FC = () => {
 		setRecommendations([]);
 		setTotalDuration(0);
 		setStep("duration");
+		setSwipedCount(0);
 	}, []);
+
+	const fetchMoreRecommendations = useCallback(async () => {
+		// Fetch new recommendations and append them to existing ones
+		if (musicKit && isAuthorized) {
+			console.log(`📥 Fetching more recommendations. Current count: ${recommendations.length}`);
+			setLoading(true);
+			setError(null);
+
+			const result = await fetchRecommendations({
+				musicKit,
+				handleApiError
+			});
+
+			if (result.error) {
+				setError(result.error);
+			} else {
+				setSwipedCount(0);
+				setRecommendations(() => [...result.recommendedItems]);
+			}
+
+			setLoading(false);
+		}
+	}, [musicKit, isAuthorized, handleApiError, recommendations.length]);
 
 	const handleDurationNext = useCallback(() => {
 		setStep("swipe");
@@ -103,7 +135,7 @@ const Recommendations: React.FC = () => {
 	}
 
 	if (step === "complete") {
-		return <CompleteStep onReset={resetPlaylist} />;
+		return <CompleteStep onReset={resetPlaylist} selectedItems={selectedItems} />;
 	}
 
 	if (loading) {
@@ -123,6 +155,8 @@ const Recommendations: React.FC = () => {
 			targetSeconds={targetSeconds}
 			onSwipe={handleSwipe}
 			onReset={resetPlaylist}
+			onFetchMore={fetchMoreRecommendations}
+			swipedCount={swipedCount}
 		/>
 	);
 };

@@ -8,6 +8,9 @@ export function formatTime(milliseconds: number): string {
 // Type alias for enriched recommendation items
 export type EnrichedRecommendationItem = MusicKit.Songs;
 
+// Declare fetch for browser environment
+declare const fetch: (input: string, params?: object) => Promise<Response>;
+
 export function getDisplayName(item: MusicKit.Resource): string {
 	return (
 		item.attributes.name ||
@@ -317,6 +320,124 @@ export interface FetchRecommendationsResult {
 	error: string | null;
 }
 
+export interface CreatePlaylistOptions {
+	musicKit: MusicKit.MusicKitInstance;
+	handleApiError: (error: any) => Promise<void>;
+	playlistName: string;
+	selectedItems: MusicKit.Songs[];
+}
+
+export interface CreatePlaylistResult {
+	success: boolean;
+	error: string | null;
+	playlistId?: string;
+}
+
+export async function createPlaylist({
+	musicKit,
+	handleApiError,
+	playlistName,
+	selectedItems,
+}: CreatePlaylistOptions): Promise<CreatePlaylistResult> {
+	try {
+		// Get the current user's music user token for authentication
+		const musicUserToken = musicKit.musicUserToken;
+		if (!musicUserToken) {
+			throw new Error("No music user token available");
+		}
+
+		// First, fetch existing playlists to check for duplicates
+		const playlistsResponse = (await musicKit.api.music(
+			"/v1/me/library/playlists",
+		)) as {
+			data: { data: MusicKit.LibraryPlaylists[] };
+		};
+
+		console.log("Playlists response:", playlistsResponse);
+
+		// Handle different possible response structures
+		const playlists = Array.isArray(playlistsResponse.data)
+			? playlistsResponse.data
+			: playlistsResponse.data?.data || [];
+
+		const existingPlaylist = playlists.find(
+			(playlist) => playlist.attributes?.name === playlistName,
+		);
+
+		if (existingPlaylist) {
+			// Playlist with this name already exists - return error
+			return {
+				success: false,
+				error: `A playlist named "${playlistName}" already exists. Please choose a different name.`,
+			};
+		}
+
+		// Create new playlist with tracks
+		const tracksData = selectedItems.map((item) => ({
+			id: item.id,
+			type: "songs",
+		}));
+
+		const response = await fetch(
+			"https://api.music.apple.com/v1/me/library/playlists",
+			{
+				method: "POST",
+				headers: {
+					Authorization: `Bearer ${musicKit.developerToken}`,
+					"Media-User-Token": musicUserToken,
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					attributes: {
+						name: playlistName,
+						description: `Playlist created with ${selectedItems.length} songs`,
+						isPublic: false,
+					},
+					relationships: {
+						tracks: { data: tracksData },
+					},
+				}),
+			},
+		);
+
+		if (!response.ok) {
+			const errorData = await response.json().catch(() => ({}));
+			throw new Error(
+				`HTTP ${response.status}: ${errorData.errors?.[0]?.detail || response.statusText}`,
+			);
+		}
+
+		const playlistResponse = await response.json();
+		const playlistId = playlistResponse?.data?.[0]?.id;
+
+		console.log(
+			`Playlist "${playlistName}" created successfully with ${selectedItems.length} songs`,
+		);
+
+		return {
+			success: true,
+			error: null,
+			playlistId,
+		};
+	} catch (err: any) {
+		console.error("Failed to create/update playlist:", err);
+
+		// Handle authentication errors through the context
+		if (err.message?.includes("401") || err.message?.includes("403")) {
+			await handleApiError(err);
+			return {
+				success: false,
+				error: "Authentication expired. Please sign in again.",
+			};
+		} else {
+			return {
+				success: false,
+				error: `Failed to create/update playlist: ${err.message || "Unknown error"}`,
+			};
+		}
+	}
+}
+
 export async function fetchRecommendations({
 	musicKit,
 	handleApiError,
@@ -328,7 +449,8 @@ export async function fetchRecommendations({
 			data: { data: MusicKit.PersonalRecommendation[] };
 		};
 
-		// Get enriched recommendation items
+		// Get enriched recommendation items with pagination offset
+		// Each page gets 20 items, so we'll use the page to offset the random selection
 		const randomSongs = await getRandomSongs(res.data.data, musicKit, 20);
 
 		return {
