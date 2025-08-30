@@ -7,10 +7,15 @@
   "module": "src/index.tsx",
   "scripts": {
     "dev": "bun --hot src/index.tsx",
+    "dev:debug": "bun --hot src/index.tsx",
     "start": "NODE_ENV=production bun src/index.tsx",
-    "build": "bun run build.ts"
+    "build": "bun run build.ts",
+    "build:debug": "bun run build.ts --source-map=linked",
+    "lint": "eslint src --ext .ts,.tsx,.js,.jsx",
+    "lint:fix": "eslint src --ext .ts,.tsx,.js,.jsx --fix"
   },
   "dependencies": {
+    "@base-ui-components/react": "^1.0.0-beta.1",
     "@hookform/resolvers": "^4.1.0",
     "@radix-ui/react-label": "^2.1.2",
     "@radix-ui/react-select": "^2.1.6",
@@ -19,9 +24,10 @@
     "bun-plugin-tailwind": "^0.0.14",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "daisyui": "^5.0.54",
     "framer-motion": "^12.23.9",
     "lucide-react": "^0.475.0",
-    "motion": "^12.23.9",
+    "motion": "^12.23.12",
     "react": "^19",
     "react-dom": "^19",
     "react-hook-form": "^7.54.2",
@@ -35,6 +41,12 @@
     "@types/bun": "latest",
     "@types/musickit-js": "^1.0.10",
     "@types/react": "^19",
-    "@types/react-dom": "^19"
+    "@types/react-dom": "^19",
+    "@typescript-eslint/eslint-plugin": "^8.38.0",
+    "@typescript-eslint/parser": "^8.38.0",
+    "eslint": "^9.32.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20"
   }
 }

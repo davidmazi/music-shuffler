@@ -1,9 +1,18 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { GlassCard, CardContent } from "@/components/ui/card"
 import { Slider } from "@/components/ui/slider"
 import { Button } from "@/components/ui/button"
-import { Sparkles, Headphones } from "lucide-react"
-import { motion } from "framer-motion"
+import { Sparkles, Headphones, Clock } from "lucide-react"
+import { motion, AnimatePresence, useMotionValue, useTransform, useSpring, useAnimation } from "framer-motion"
+import { CountingNumber } from "@/components/animate-ui/text/counting-number"
+
+
+// Add type declarations for browser APIs
+declare global {
+    interface Navigator {
+        vibrate(pattern: number | number[]): boolean;
+    }
+}
 
 interface DurationStepProps {
     targetDuration: number[];
@@ -16,81 +25,253 @@ const DurationStep: React.FC<DurationStepProps> = ({
     onDurationChange,
     onNext
 }) => {
+    // Animation states and refs
+    const [isDragging, setIsDragging] = useState(false);
+    const [showParticles, setShowParticles] = useState(false);
+    const [previousDuration, setPreviousDuration] = useState(targetDuration[0]);
+    const buttonRef = useRef<any>(null);
+    const sliderRef = useRef<any>(null);
+
+    // Motion values for smooth animations
+    const sliderValue = useMotionValue(targetDuration[0]);
+    const springValue = useSpring(sliderValue, {
+        stiffness: 300,
+        damping: 30,
+        mass: 0.8
+    });
+
+    // Transform values for dynamic effects
+    const knobScale = useTransform(springValue, [15, 120], [1, 1.2]);
+    const knobGlow = useTransform(springValue, [15, 120], [0, 1]);
+    const labelScale = useTransform(springValue, [15, 25], [1, 1.3]);
+    const labelScaleMax = useTransform(springValue, [110, 120], [1, 1.3]);
+
+    // Animation controls
+    const numberAnimation = useAnimation();
+    const particleAnimation = useAnimation();
+    const backgroundAnimation = useAnimation();
+
+    // Haptic feedback function
+    const triggerHaptic = () => {
+        if (typeof window !== 'undefined' && 'vibrate' in window.navigator) {
+            window.navigator.vibrate(50);
+        }
+    };
+
+    // Update motion value when duration changes
+    useEffect(() => {
+        sliderValue.set(targetDuration[0]);
+
+        // Animate number change with bounce effect
+        if (targetDuration[0] !== previousDuration) {
+            numberAnimation.start({
+                scale: [1, 1.1, 0.95, 1],
+                transition: {
+                    duration: 0.4,
+                    ease: "easeOut"
+                }
+            });
+            setPreviousDuration(targetDuration[0]);
+        }
+    }, [targetDuration[0], previousDuration, sliderValue, numberAnimation]);
+
+    // Handle slider interaction
+    const handleSliderChange = (value: number[]) => {
+        onDurationChange(value);
+        setIsDragging(true);
+        triggerHaptic();
+    };
+
+    const handleSliderEnd = () => {
+        setIsDragging(false);
+        // Trigger particle effect on release
+        particleAnimation.start({
+            scale: [0, 1.2, 0],
+            opacity: [0, 1, 0],
+            transition: { duration: 0.6, ease: "easeOut" }
+        });
+    };
+
+    // Handle start button interaction
+    const handleStartClick = () => {
+        triggerHaptic();
+        setShowParticles(true);
+
+        // Animate button with pop effect
+        if (buttonRef.current) {
+            buttonRef.current.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                if (buttonRef.current) {
+                    buttonRef.current.style.transform = 'scale(1)';
+                }
+            }, 150);
+        }
+
+        // Trigger confetti effect
+        setTimeout(() => {
+            setShowParticles(false);
+            onNext();
+        }, 800);
+    };
+
+    // Ambient background animation
+    useEffect(() => {
+        backgroundAnimation.start({
+            rotate: [0, 360],
+            transition: {
+                duration: 20,
+                repeat: Infinity,
+                ease: "linear"
+            }
+        });
+    }, [backgroundAnimation]);
+
     return (
-        <div className="flex items-center justify-center min-h-screen p-6">
+        <div className="flex items-center justify-center min-h-screen p-6 relative overflow-hidden">
+            {/* Ambient Background Animation */}
+            <motion.div
+                animate={backgroundAnimation}
+                className="absolute inset-0 pointer-events-none"
+            >
+                <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-gradient-to-r from-brand-primary/10 to-brand-secondary/10 rounded-full blur-3xl" />
+                <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-gradient-to-r from-brand-secondary/10 to-brand-primary/10 rounded-full blur-3xl" />
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-gradient-to-r from-brand-primary/5 to-brand-secondary/5 rounded-full blur-2xl" />
+            </motion.div>
+
+            {/* Particle Effects */}
+            <AnimatePresence>
+                {showParticles && (
+                    <div className="absolute inset-0 pointer-events-none">
+                        {Array.from({ length: 12 }, (_, i) => (
+                            <motion.div
+                                key={`particle-${Date.now()}-${i}`}
+                                initial={{
+                                    x: 0,
+                                    y: 0,
+                                    scale: 0,
+                                    opacity: 1,
+                                    rotate: 0
+                                }}
+                                animate={{
+                                    x: (Math.random() - 0.5) * 200,
+                                    y: (Math.random() - 0.5) * 200,
+                                    scale: [0, 1, 0],
+                                    opacity: [1, 1, 0],
+                                    rotate: 360
+                                }}
+                                transition={{
+                                    duration: 1.2,
+                                    delay: i * 0.05,
+                                    ease: "easeOut"
+                                }}
+                                className="absolute top-1/2 left-1/2 w-2 h-2 bg-gradient-to-r from-brand-primary to-brand-secondary rounded-full"
+                            />
+                        ))}
+                    </div>
+                )}
+            </AnimatePresence>
+
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
-                className="w-full max-w-sm"
+                className="w-full max-w-sm relative z-10"
             >
-                {/* Header */}
-                <div className="text-center mb-12">
-                    <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                        className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-[#f94c57] to-pink-500 rounded-2xl flex items-center justify-center shadow-2xl shadow-[#f94c57]/25"
-                    >
-                        <Headphones className="w-10 h-10 text-white" />
-                    </motion.div>
-                    <motion.h1
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.4 }}
-                        className="text-4xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent mb-3"
-                    >
-                        Music Shuffler
-                    </motion.h1>
-                    <motion.p
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.6 }}
-                        className="text-gray-400 text-lg"
-                    >
-                        Create your perfect playlist
-                    </motion.p>
-                </div>
-
                 {/* Main Card */}
-                <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }}>
-                    <GlassCard>
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.8 }}
+                >
+                    <GlassCard variant="elevated">
                         <CardContent className="p-8">
+                            {/* Animated Duration Display */}
                             <div className="text-center mb-8">
-                                <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#f94c57]/20 to-pink-500/20 rounded-full mb-6">
-                                    <Sparkles className="w-4 h-4 text-[#f94c57]" />
-                                    <span className="text-[#f94c57] text-sm font-medium">Duration</span>
-                                </div>
-                                <p className="text-gray-300 mb-6">How long should your playlist be?</p>
-
-                                <div className="text-6xl font-bold bg-gradient-to-r from-[#f94c57] to-pink-500 bg-clip-text text-transparent mb-8">
-                                    {targetDuration[0]} min
-                                </div>
+                                <motion.div
+                                    animate={numberAnimation}
+                                    className="text-6xl font-bold mb-8"
+                                >
+                                    <span className="bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+                                        <CountingNumber
+                                            number={targetDuration[0]}
+                                            className="text-6xl font-bold bg-clip-text text-transparent"
+                                        />
+                                        <span className="ml-2">min</span>
+                                    </span>
+                                </motion.div>
                             </div>
 
-                            <div className="mb-8">
+                            {/* Enhanced Slider Section */}
+                            <div className="mb-8 relative">
+                                {/* Custom Slider Knob Glow Effect */}
+                                <motion.div
+                                    style={{ scale: knobScale, opacity: knobGlow }}
+                                    className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-brand-primary/30 rounded-full blur-md pointer-events-none"
+                                />
+
                                 <Slider
+                                    ref={sliderRef}
                                     value={targetDuration}
-                                    onValueChange={onDurationChange}
+                                    onValueChange={handleSliderChange}
+                                    onValueCommit={handleSliderEnd}
                                     max={120}
                                     min={15}
-                                    step={5}
-                                    className="w-full"
+                                    step={1}
+                                    className="w-full relative z-10 h-8"
                                 />
-                                <div className="flex justify-between text-sm text-gray-500 mt-3">
-                                    <span>15 min</span>
-                                    <span>120 min</span>
-                                </div>
+
+
                             </div>
 
-                            <Button
-                                onClick={onNext}
-                                className="w-full bg-gradient-to-r from-[#f94c57] to-pink-500 hover:from-[#e8434e] hover:to-pink-600 text-white font-semibold py-4 rounded-xl shadow-lg shadow-[#f94c57]/25 transition-all duration-200 hover:shadow-[#f94c57]/40 hover:scale-[1.02]"
-                                size="lg"
+                            {/* Enhanced Start Button */}
+                            <motion.button
+                                ref={buttonRef}
+                                onClick={handleStartClick}
+                                className="w-full font-semibold py-4 px-6 rounded-xl relative overflow-hidden bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                                whileHover={{
+                                    scale: 1.05,
+                                    boxShadow: "0 20px 40px rgba(147, 51, 234, 0.3)"
+                                }}
+                                whileTap={{ scale: 0.95 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 17 }}
                             >
-                                <Sparkles className="w-5 h-5 mr-2" />
-                                Start Building
-                            </Button>
+                                {/* Animated Background */}
+                                <motion.div
+                                    className="absolute inset-0 bg-gradient-to-r from-purple-400/20 via-blue-400/20 to-purple-400/20"
+                                    animate={{
+                                        x: ["-100%", "100%"],
+                                    }}
+                                    transition={{
+                                        duration: 2,
+                                        repeat: Infinity,
+                                        ease: "linear"
+                                    }}
+                                />
+
+                                {/* Glow Effect */}
+                                <motion.div
+                                    className="absolute inset-0 bg-gradient-to-r from-purple-500/30 to-blue-500/30 rounded-xl"
+                                    animate={{
+                                        opacity: [0.3, 0.6, 0.3],
+                                    }}
+                                    transition={{
+                                        duration: 2,
+                                        repeat: Infinity,
+                                        ease: "easeInOut"
+                                    }}
+                                />
+
+                                {/* Content */}
+                                <div className="relative z-10 flex items-center justify-center gap-2">
+                                    <motion.div
+                                        animate={{ rotate: [0, 360] }}
+                                        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                                    >
+                                        <Sparkles className="w-5 h-5" />
+                                    </motion.div>
+                                    <span>Start</span>
+                                </div>
+                            </motion.button>
                         </CardContent>
                     </GlassCard>
                 </motion.div>

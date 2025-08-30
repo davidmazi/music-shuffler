@@ -1,6 +1,6 @@
 import React from 'react';
-import { Music } from "lucide-react"
-import { motion } from "framer-motion"
+import { motion } from "framer-motion";
+import { Music } from "lucide-react";
 
 import { getDisplayName, getArtworkUrl, getDuration, formatTime } from '@/utils/musicUtils';
 

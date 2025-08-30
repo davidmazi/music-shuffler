@@ -2,6 +2,8 @@ import { serve } from "bun";
 import index from "./index.html";
 
 const server = serve({
+  hostname: "0.0.0.0", // Bind to all network interfaces
+  port: 3000, // Specify a port (you can change this if needed)
   routes: {
     // Serve index.html for all unmatched routes.
     "/*": index,
@@ -39,3 +41,5 @@ const server = serve({
 });
 
 console.log(`🚀 Server running at ${server.url}`);
+console.log(`📱 Access from phone: http://192.168.1.15:3000`);
+console.log(`⚡ Mobile optimizations enabled - simplified animations on mobile devices`);

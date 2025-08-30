@@ -5,10 +5,11 @@
     @apply font-sans;
   }
 
-  /* Prevent horizontal scrolling */
+  /* Prevent horizontal scrolling and disable vertical scrolling */
   html,
   body {
     overflow-x: hidden;
+    overflow-y: hidden;
     touch-action: pan-y;
   }
 
@@ -53,6 +54,25 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+@keyframes pop-in-delayed {
+  0% {
+    display: none;
+    transform: scale(0);
+  }
+  80% {
+    display: none;
+    transform: scale(0);
+  }
+  100% {
+    display: inline-block;
+    transform: scale(1);
+  }
+}
+
+.animate-pop-in-delayed {
+  animation: pop-in-delayed 4s ease-out;
 }
 
 @media (prefers-reduced-motion) {

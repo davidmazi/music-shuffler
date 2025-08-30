@@ -1,17 +1,16 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Button } from "@/components/ui/button"
-import { Heart, X } from "lucide-react"
-import { motion } from "framer-motion"
 
 import ProgressHeader from './ProgressHeader';
 import SwipeCard, { type SwipeCardRef } from './SwipeCards';
+import { type EnrichedRecommendationItem } from '@/utils/musicUtils';
 
 interface SwipeInterfaceProps {
-    recommendations: MusicKit.Resource[];
-    selectedItems: MusicKit.Resource[];
+    recommendations: EnrichedRecommendationItem[];
+    selectedItems: EnrichedRecommendationItem[];
     totalDuration: number;
     targetSeconds: number;
-    onSwipe: (direction: "left" | "right", item: MusicKit.Resource) => void;
+    onSwipe: (direction: "left" | "right", item: EnrichedRecommendationItem) => void;
+    onReset: () => void;
 }
 
 const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
@@ -19,14 +18,15 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
     selectedItems,
     totalDuration,
     targetSeconds,
-    onSwipe
+    onSwipe,
+    onReset
 }) => {
     const swipeCardRef = useRef<SwipeCardRef>(null);
 
 
 
     // Stable intermediary array that only updates when we get new recommendations
-    const [stableRecommendations, setStableRecommendations] = useState<MusicKit.Resource[]>([]);
+    const [stableRecommendations, setStableRecommendations] = useState<EnrichedRecommendationItem[]>([]);
 
     // Only update when we actually get new recommendations (not on every parent re-render)
     useEffect(() => {
@@ -43,6 +43,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
                     totalDuration={totalDuration}
                     targetSeconds={targetSeconds}
                     selectedItemsCount={selectedItems.length}
+                    onReset={onReset}
                 />
             </div>
 
@@ -56,34 +57,6 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
                 />
             </div>
 
-            {/* Action Buttons - Fixed at bottom */}
-            <div className="mt-auto p-6 pt-0">
-                <div className="flex justify-center gap-8 relative z-20">
-                    <motion.div whileTap={{ scale: 0.95 }}>
-                        <Button
-                            size="lg"
-                            variant="outline"
-                            className="w-16 h-16 rounded-2xl border-2 border-red-500/50 text-red-400 hover:bg-red-500/20 hover:border-red-500 bg-transparent backdrop-blur-sm transition-all duration-200"
-                            onClick={() => {
-                                swipeCardRef.current?.swipeLeft();
-                            }}
-                        >
-                            <X className="w-7 h-7" />
-                        </Button>
-                    </motion.div>
-                    <motion.div whileTap={{ scale: 0.95 }}>
-                        <Button
-                            size="lg"
-                            className="w-16 h-16 rounded-2xl bg-gradient-to-r from-[#f94c57] to-pink-500 hover:from-[#e8434e] hover:to-pink-600 text-white shadow-lg shadow-[#f94c57]/25 transition-all duration-200 hover:shadow-[#f94c57]/40"
-                            onClick={() => {
-                                swipeCardRef.current?.swipeRight();
-                            }}
-                        >
-                            <Heart className="w-7 h-7" />
-                        </Button>
-                    </motion.div>
-                </div>
-            </div>
         </div>
     );
 };
