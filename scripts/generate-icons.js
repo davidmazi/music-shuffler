@@ -12,7 +12,7 @@ function generateSVGIcon(size) {
   
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
-  <rect width="${size}" height="${size}" fill="#3b82f6"/>
+  <rect width="${size}" height="${size}" fill="#ec4899"/>
   <text x="${size/2}" y="${size/2}" font-family="Arial, sans-serif" font-size="${iconSize * 0.4}" fill="white" text-anchor="middle" dominant-baseline="middle">🎵</text>
 </svg>`;
 }
