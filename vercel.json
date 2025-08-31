@@ -3,11 +3,6 @@
   "outputDirectory": "dist",
   "installCommand": "bun install",
   "framework": "vite",
-  "functions": {
-    "src/index.tsx": {
-      "runtime": "bun@1.0.0"
-    }
-  },
   "rewrites": [
     {
       "source": "/api/(.*)",
