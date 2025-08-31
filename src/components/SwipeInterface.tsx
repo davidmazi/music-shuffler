@@ -1,8 +1,9 @@
 import React, { useRef, useState, useEffect } from 'react';
 
 import ProgressHeader from './ProgressHeader';
-import SwipeCard, { type SwipeCardRef } from './SwipeCards';
+import SwipeCards, { type SwipeCardRef } from './SwipeCards';
 import { type EnrichedRecommendationItem } from '@/utils/musicUtils';
+import LoadingState from './LoadingState';
 
 interface SwipeInterfaceProps {
     recommendations: EnrichedRecommendationItem[];
@@ -10,6 +11,7 @@ interface SwipeInterfaceProps {
     totalDuration: number;
     targetSeconds: number;
     onSwipe: (direction: "left" | "right", item: EnrichedRecommendationItem) => void;
+    loading: boolean;
     onReset: () => void;
     onFetchMore: () => Promise<void>;
     swipedCount: number;
@@ -20,6 +22,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
     selectedItems,
     totalDuration,
     targetSeconds,
+    loading,
     onSwipe,
     onReset,
     onFetchMore,
@@ -84,14 +87,59 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
                 />
             </div>
 
+            {/* Apple Music Playback Controls */}
+
+            {React.createElement('apple-music-playback-controls', {
+                className: 'self-center',
+                ref: (element) => {
+                    if (element) {
+                        // Hide unwanted elements after the component renders
+                        setTimeout(() => {
+                            try {
+                                const shadowRoot = element.shadowRoot;
+                                if (shadowRoot) {
+                                    // Hide previous button
+                                    const previousBtn = shadowRoot.querySelector("div > div.music-controls__main > amp-playback-controls-item-skip.previous");
+                                    if (previousBtn) {
+                                        (previousBtn as HTMLElement).style.display = 'none';
+                                    }
+
+                                    // Hide next button
+                                    const nextBtn = shadowRoot.querySelector("div > div.music-controls__main > amp-playback-controls-item-skip.next");
+                                    if (nextBtn) {
+                                        (nextBtn as HTMLElement).style.display = 'none';
+                                    }
+
+                                    // Hide shuffle button
+                                    const shuffleBtn = shadowRoot.querySelector("div > div:nth-child(1) > amp-playback-controls-shuffle");
+                                    if (shuffleBtn) {
+                                        (shuffleBtn as HTMLElement).style.display = 'none';
+                                    }
+
+                                    // Hide repeat button
+                                    const repeatBtn = shadowRoot.querySelector("div > div:nth-child(3) > amp-playback-controls-repeat");
+                                    if (repeatBtn) {
+                                        (repeatBtn as HTMLElement).style.display = 'none';
+                                    }
+                                }
+                            } catch (error) {
+                                console.warn('Could not hide playback control elements:', error);
+                            }
+                        }, 100); // Small delay to ensure component is fully rendered
+                    }
+                }
+            })}
+
+
             {/* Card Stack - Give proper height for cards */}
             <div className="flex-1 flex items-center justify-center px-6 mb-10">
-                <SwipeCard
+                {loading ? <LoadingState /> : <SwipeCards
                     key="swipe-cards-stable"
                     ref={swipeCardRef}
                     recommendations={stableRecommendations}
                     onSwipe={onSwipe}
-                />
+                />}
+
             </div>
 
         </div>

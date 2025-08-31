@@ -4,7 +4,7 @@ import { LogOut } from "lucide-react";
 import AppleMusicAuth from "./components/AppleMusicAuth";
 import Recommendations from "./components/Recommendations";
 import ThemeToggle from "./components/ThemeToggle";
-import PWAInstallButton from "./components/PWAInstallButton";
+
 import { MusicKitProvider } from "./contexts/MusicKitContext";
 import { useMusicKit } from "./contexts/MusicKitContext";
 import "./index.css";
@@ -26,10 +26,7 @@ function AppContent() {
       {/* Theme Toggle */}
       <ThemeToggle />
 
-      {/* PWA Install Button */}
-      <div className="fixed top-6 left-6 z-50">
-        <PWAInstallButton variant="glass" size="sm" />
-      </div>
+
 
       {/* Main content container */}
       <div className="relative z-10 min-h-screen">

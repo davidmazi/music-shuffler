@@ -61,13 +61,35 @@ export function getArtworkUrl(
 	const artworkUrl = findArtworkUrl(item);
 
 	if (artworkUrl) {
+		// Apple Music artwork URLs use {w} and {h} placeholders
+		// Ensure we provide a square aspect ratio for consistent display
+		const finalSize = Math.max(size, 100); // Minimum size for quality
 		return artworkUrl
-			.replace("{w}", size.toString())
-			.replace("{h}", size.toString());
+			.replace("{w}", finalSize.toString())
+			.replace("{h}", finalSize.toString());
 	}
 
 	return `/placeholder.svg?height=${size}&width=${size}`;
 }
+
+// New function to get multiple artwork sizes for responsive design
+export function getArtworkUrls(item: MusicKit.Resource): {
+	small: string;
+	medium: string;
+	large: string;
+	original: string | null;
+} {
+	const originalUrl = getArtworkUrl(item, 1); // Get original URL without size replacement
+
+	return {
+		small: getArtworkUrl(item, 150),
+		medium: getArtworkUrl(item, 300),
+		large: getArtworkUrl(item, 600),
+		original: originalUrl?.includes("{w}") ? originalUrl : null,
+	};
+}
+
+
 
 export function getDuration(item: MusicKit.Resource): number {
 	// Return duration in seconds, default to 180 seconds (3 minutes) if not available

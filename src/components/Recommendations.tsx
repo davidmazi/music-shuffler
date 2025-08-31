@@ -8,8 +8,6 @@ import {
 } from "@/utils/musicUtils";
 import DurationStep from "./DurationStep";
 import CompleteStep from "./CompleteStep";
-import LoadingState from "./LoadingState";
-
 import EmptyState from "./EmptyState";
 import SwipeInterface from "./SwipeInterface";
 
@@ -138,17 +136,13 @@ const Recommendations: React.FC = () => {
 		return <CompleteStep onReset={resetPlaylist} selectedItems={selectedItems} />;
 	}
 
-	if (loading) {
-		return <LoadingState />;
-	}
-
-
-	if (recommendations.length === 0) {
+	if (!loading && recommendations.length === 0) {
 		return <EmptyState />;
 	}
 
 	return (
 		<SwipeInterface
+			loading={loading}
 			recommendations={recommendations}
 			selectedItems={selectedItems}
 			totalDuration={totalDuration}

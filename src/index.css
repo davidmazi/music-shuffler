@@ -83,3 +83,41 @@
     animation: none !important;
   }
 }
+
+/* Enhanced artwork styling for SwipeCards */
+.swipe-card-artwork {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.75rem;
+}
+
+.swipe-card-artwork img {
+  transition: transform 0.3s ease-in-out;
+}
+
+.swipe-card-artwork:hover img {
+  transform: scale(1.05);
+}
+
+/* Responsive artwork sizing */
+@media (max-width: 640px) {
+  .swipe-card-artwork {
+    border-radius: 0.5rem;
+  }
+}
+
+/* Ensure proper loading states */
+.artwork-loading {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading-shimmer 1.5s infinite;
+}
+
+@keyframes loading-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}

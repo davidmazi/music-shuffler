@@ -3,6 +3,9 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 declare global {
   interface Window {
     MusicKit: any;
+    MusicKitWebComponents: {
+      initialize: (instance: any) => Promise<void>;
+    };
   }
 }
 
@@ -43,10 +46,10 @@ export const MusicKitProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   // Function to handle authorization status changes
   const handleAuthChange = useCallback((event: any) => {
-    setIsAuthorized(event.authorizationStatus === 'authorized');
+    setIsAuthorized(event.authorizationStatus === 3);
     console.debug("🚀\x1b[5m\x1b[32m ~ DM\x1b[0m\x1b[36m ~ MusicKitContext.tsx:113 ~ handleAuthChange ~ setIsAuthorized\x1b[0m", event.authorizationStatus)
 
-    if (event.authorizationStatus === 'authorized') {
+    if (event.authorizationStatus === 3) {
       const instance = window.MusicKit.getInstance();
       setUserName(instance.user?.name || 'User');
     } else {
@@ -140,6 +143,16 @@ export const MusicKitProvider: React.FC<{ children: ReactNode }> = ({ children }
           }
 
           instance.addEventListener('authorizationStatusDidChange', handleAuthChange);
+
+          // Initialize MusicKit Web Components
+          if (window.MusicKitWebComponents) {
+            try {
+              await window.MusicKitWebComponents.initialize(instance);
+              console.log('MusicKit Web Components initialized successfully');
+            } catch (webComponentError) {
+              console.warn('Failed to initialize MusicKit Web Components:', webComponentError);
+            }
+          }
 
         } else {
           setError('MusicKit SDK not loaded.');
