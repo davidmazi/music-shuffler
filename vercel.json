@@ -6,9 +6,6 @@
   "functions": {
     "src/index.tsx": {
       "runtime": "bun"
-    },
-    "api/music/[...path].ts": {
-      "runtime": "bun"
     }
   },
   "rewrites": [
