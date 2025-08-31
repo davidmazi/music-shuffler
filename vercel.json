@@ -5,7 +5,7 @@
   "framework": "vite",
   "functions": {
     "src/index.tsx": {
-      "runtime": "bun"
+      "runtime": "bun@1.0.0"
     }
   },
   "rewrites": [
