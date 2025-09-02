@@ -1,3 +1,5 @@
+import type { MusicKitInstance } from "@/contexts/MusicKitContext";
+
 export function formatTime(milliseconds: number): string {
 	const seconds = Math.floor(milliseconds / 1000);
 	const mins = Math.floor(seconds / 60);
@@ -189,10 +191,6 @@ export async function getRandomSongs(
 		}
 	}
 
-	console.log(
-		`🎵 Created ${songPlaceholders.length} song placeholders from ${allContentItems.length} content items`,
-	);
-
 	// Shuffle the song placeholders using Fisher-Yates algorithm
 	const shuffledPlaceholders = [...songPlaceholders];
 	for (let i = shuffledPlaceholders.length - 1; i > 0; i--) {
@@ -205,8 +203,6 @@ export async function getRandomSongs(
 
 	// Take only the number of songs we need
 	const selectedPlaceholders = shuffledPlaceholders.slice(0, count);
-
-	console.log(`🎵 Selected ${selectedPlaceholders.length} songs to fetch`);
 
 	// Group placeholders by content to batch fetch efficiently
 	const placeholdersByContent = new Map<
@@ -239,76 +235,53 @@ export async function getRandomSongs(
 		const batchPromises = batchKeys.map(async (key) => {
 			const placeholders = placeholdersByContent.get(key)!;
 			const firstPlaceholder = placeholders[0];
+			const songs: MusicKit.Songs[] = [];
 
-			try {
-				const songs: MusicKit.Songs[] = [];
+			if (firstPlaceholder.type === "albums") {
+				// Fetch album with tracks
+				const { data } = (await musicKit.api.music(
+					firstPlaceholder.contentHref,
+					{
+						include: ["tracks"],
+					},
+				)) as any;
 
-				if (firstPlaceholder.type === "albums") {
-					// Fetch album with tracks
-					const { data } = (await musicKit.api.music(
-						firstPlaceholder.contentHref,
-						{
-							include: ["tracks"],
-						},
-					)) as any;
+				// The actual album data is in response.data[0]
+				const album = data?.data[0] as MusicKit.Albums;
+				const allAlbumSongs = (album?.relationships?.tracks?.data?.filter(
+					(track) => track.type === "songs",
+				) || []) as MusicKit.Songs[];
 
-					console.log(
-						`🎵 Album API response for ${firstPlaceholder.contentId}:`,
-						data,
-					);
-
-					// The actual album data is in response.data[0]
-					const album = data?.data[0] as MusicKit.Albums;
-					const allAlbumSongs = (album?.relationships?.tracks?.data?.filter(
-						(track) => track.type === "songs",
-					) || []) as MusicKit.Songs[];
-
-					// Extract only the songs we need based on trackIndex
-					for (const placeholder of placeholders) {
-						if (allAlbumSongs[placeholder.trackIndex]) {
-							songs.push(allAlbumSongs[placeholder.trackIndex]);
-						}
-					}
-				} else if (firstPlaceholder.type === "playlists") {
-					// Fetch playlist with tracks
-					const { data } = (await musicKit.api.music(
-						firstPlaceholder.contentHref,
-						{
-							include: ["tracks"],
-						},
-					)) as any;
-
-					console.log(
-						`🎵 Playlist API response for ${firstPlaceholder.contentId}:`,
-						data,
-					);
-
-					// The actual playlist data is in response.data[0]
-					const playlist = data?.data[0] as MusicKit.Playlists;
-					const allPlaylistSongs =
-						(playlist?.relationships?.tracks?.data?.filter(
-							(track) => track.type === "songs",
-						) || []) as MusicKit.Songs[];
-
-					// Extract only the songs we need based on trackIndex
-					for (const placeholder of placeholders) {
-						if (allPlaylistSongs[placeholder.trackIndex]) {
-							songs.push(allPlaylistSongs[placeholder.trackIndex]);
-						}
+				// Extract only the songs we need based on trackIndex
+				for (const placeholder of placeholders) {
+					if (allAlbumSongs[placeholder.trackIndex]) {
+						songs.push(allAlbumSongs[placeholder.trackIndex]);
 					}
 				}
+			} else if (firstPlaceholder.type === "playlists") {
+				// Fetch playlist with tracks
+				const { data } = (await musicKit.api.music(
+					firstPlaceholder.contentHref,
+					{
+						include: ["tracks"],
+					},
+				)) as any;
 
-				console.log(
-					`🎵 Got ${songs.length} songs from ${firstPlaceholder.type}: ${firstPlaceholder.contentId}`,
-				);
-				return songs;
-			} catch (error) {
-				console.warn(
-					`Failed to fetch details for ${firstPlaceholder.type} ${firstPlaceholder.contentId}:`,
-					error,
-				);
-				return [];
+				// The actual playlist data is in response.data[0]
+				const playlist = data?.data[0] as MusicKit.Playlists;
+				const allPlaylistSongs = (playlist?.relationships?.tracks?.data?.filter(
+					(track) => track.type === "songs",
+				) || []) as MusicKit.Songs[];
+
+				// Extract only the songs we need based on trackIndex
+				for (const placeholder of placeholders) {
+					if (allPlaylistSongs[placeholder.trackIndex]) {
+						songs.push(allPlaylistSongs[placeholder.trackIndex]);
+					}
+				}
 			}
+
+			return songs;
 		});
 
 		// Wait for batch to complete
@@ -321,17 +294,14 @@ export async function getRandomSongs(
 		}
 	}
 
-	console.log("🎵 Total songs collected:", allSongs.length);
-
 	// Shuffle the final result to ensure randomness
 	const result = [...allSongs].sort(() => Math.random() - 0.5).slice(0, count);
 
-	console.log("🎵 Final result:", result.length, "songs");
 	return result;
 }
 
 export interface FetchRecommendationsOptions {
-	musicKit: MusicKit.MusicKitInstance;
+	musicKit: MusicKitInstance;
 	handleApiError: (error: any) => Promise<void>;
 }
 
@@ -372,8 +342,6 @@ export async function createPlaylist({
 		)) as {
 			data: { data: MusicKit.LibraryPlaylists[] };
 		};
-
-		console.log("Playlists response:", playlistsResponse);
 
 		// Handle different possible response structures
 		const playlists = Array.isArray(playlistsResponse.data)
@@ -430,10 +398,6 @@ export async function createPlaylist({
 		const playlistResponse = await response.json();
 		const playlistId = playlistResponse?.data?.[0]?.id;
 
-		console.log(
-			`Playlist "${playlistName}" created successfully with ${selectedItems.length} songs`,
-		);
-
 		return {
 			success: true,
 			error: null,
@@ -472,6 +436,15 @@ export async function fetchRecommendations({
 		// Get enriched recommendation items with pagination offset
 		// Each page gets 20 items, so we'll use the page to offset the random selection
 		const randomSongs = await getRandomSongs(res.data.data, musicKit, 20);
+
+		// Flip the array so the first card corresponds to the first song in the queue
+		const validIds = randomSongs.flatMap((item) => item.id);
+		const flippedIds = [...validIds].reverse();
+
+		await musicKit.setQueue({
+			songs: flippedIds,
+			startPlaying: true,
+		});
 
 		return {
 			recommendedItems: randomSongs,

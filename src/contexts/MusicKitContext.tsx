@@ -9,7 +9,11 @@ declare global {
   }
 }
 
-interface MusicKitInstance extends MusicKit.MusicKitInstance { }
+interface MusicKitInstance extends MusicKit.MusicKitInstance {
+  repeatMode: number;
+  queue: MusicKit.Queue
+  isPlaying: boolean;
+}
 
 interface MusicKitContextType {
   musicKit: MusicKitInstance | null;
@@ -47,8 +51,6 @@ export const MusicKitProvider: React.FC<{ children: ReactNode }> = ({ children }
   // Function to handle authorization status changes
   const handleAuthChange = useCallback((event: any) => {
     setIsAuthorized(event.authorizationStatus === 3);
-    console.debug("🚀\x1b[5m\x1b[32m ~ DM\x1b[0m\x1b[36m ~ MusicKitContext.tsx:113 ~ handleAuthChange ~ setIsAuthorized\x1b[0m", event.authorizationStatus)
-
     if (event.authorizationStatus === 3) {
       const instance = window.MusicKit.getInstance();
       setUserName(instance.user?.name || 'User');
@@ -70,7 +72,6 @@ export const MusicKitProvider: React.FC<{ children: ReactNode }> = ({ children }
       await currentMusicKit.api.music('/v1/catalog/us/songs', { limit: 1 });
       return true;
     } catch (error: any) {
-      console.warn('Token validation failed:', error);
       // Only treat 401 as invalid token, 403 might be permission-related
       if (error.status === 401) {
         setIsAuthorized(false);
@@ -85,7 +86,7 @@ export const MusicKitProvider: React.FC<{ children: ReactNode }> = ({ children }
   // Function to handle API errors and trigger re-authorization if needed
   const handleApiError = useCallback(async (error: any): Promise<void> => {
     if (error.status === 401 || error.status === 403) {
-      console.log('API error indicates invalid token, triggering re-authorization');
+
       setIsAuthorized(false);
       setUserName(null);
       setError('Your session has expired. Please sign in again.');
@@ -142,16 +143,13 @@ export const MusicKitProvider: React.FC<{ children: ReactNode }> = ({ children }
             setUserName(instance.user?.name || 'User');
           }
 
+          instance.repeatMode = 1
+
           instance.addEventListener('authorizationStatusDidChange', handleAuthChange);
 
           // Initialize MusicKit Web Components
           if (window.MusicKitWebComponents) {
-            try {
-              await window.MusicKitWebComponents.initialize(instance);
-              console.log('MusicKit Web Components initialized successfully');
-            } catch (webComponentError) {
-              console.warn('Failed to initialize MusicKit Web Components:', webComponentError);
-            }
+            await window.MusicKitWebComponents.initialize(instance);
           }
 
         } else {

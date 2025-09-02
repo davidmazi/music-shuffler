@@ -1,5 +1,6 @@
 import { serve } from "bun";
 import index from "./index.html";
+import { networkInterfaces } from "node:os";
 
 const server = serve({
   hostname: "0.0.0.0", // Bind to all network interfaces
@@ -41,5 +42,4 @@ const server = serve({
 });
 
 console.log(`🚀 Server running at ${server.url}`);
-console.log(`📱 Access from phone: http://192.168.1.15:3000`);
-console.log(`⚡ Mobile optimizations enabled - simplified animations on mobile devices`);
+console.log(`📱 Access from phone: http://${Object.values(networkInterfaces()).flat().find(ni => ni?.family === 'IPv4' && !ni?.internal)?.address || 'localhost'}:3000`);
