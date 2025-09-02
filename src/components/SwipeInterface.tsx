@@ -88,7 +88,6 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
             </div>
 
             {/* Apple Music Playback Controls */}
-
             {React.createElement('apple-music-playback-controls', {
                 className: 'self-center',
                 ref: (element) => {

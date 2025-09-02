@@ -89,8 +89,6 @@ export function getArtworkUrls(item: MusicKit.Resource): {
 	};
 }
 
-
-
 export function getDuration(item: MusicKit.Resource): number {
 	// Return duration in seconds, default to 180 seconds (3 minutes) if not available
 	return item.attributes.durationInMillis

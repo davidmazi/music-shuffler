@@ -12,8 +12,7 @@
     "build": "bun run build.ts",
     "build:debug": "bun run build.ts --source-map=linked",
     "vercel-build": "bun run build.ts",
-    "generate-icons": "bun run scripts/generate-icons.js",
-    "pwa:setup": "bun run generate-icons",
+
     "lint": "eslint src --ext .ts,.tsx,.js,.jsx",
     "lint:fix": "eslint src --ext .ts,.tsx,.js,.jsx --fix"
   },

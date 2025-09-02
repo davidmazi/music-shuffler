@@ -145,40 +145,6 @@ console.log(
 	`📄 Found ${entrypoints.length} HTML ${entrypoints.length === 1 ? "file" : "files"} to process\n`,
 );
 
-// Copy PWA assets to dist
-console.log("📱 Copying PWA assets...");
-const pwaAssets = ["public/manifest.json", "public/sw.js", "public/icons"];
-
-for (const asset of pwaAssets) {
-	const sourcePath = path.resolve(process.cwd(), asset);
-	const destPath = path.resolve(
-		process.cwd(),
-		outdir,
-		asset.replace("public/", ""),
-	);
-
-	if (existsSync(sourcePath)) {
-		// Create destination directory if it doesn't exist
-		const destDir = path.dirname(destPath);
-		if (!existsSync(destDir)) {
-			mkdirSync(destDir, { recursive: true });
-		}
-
-		// Copy file or directory
-		if (existsSync(sourcePath) && !existsSync(sourcePath + "/")) {
-			// It's a file
-			await Bun.write(destPath, await Bun.file(sourcePath).text());
-			console.log(`✅ Copied ${asset}`);
-		} else if (existsSync(sourcePath + "/")) {
-			// It's a directory
-			await Bun.$`cp -r ${sourcePath} ${destDir}`;
-			console.log(`✅ Copied directory ${asset}`);
-		}
-	} else {
-		console.warn(`⚠️ PWA asset not found: ${asset}`);
-	}
-}
-
 // Build all the HTML files
 const result = await build({
 	entrypoints,
