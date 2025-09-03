@@ -5,7 +5,7 @@ import { MusicCard } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Music, Clock } from "lucide-react";
 
-import { formatTime, type EnrichedRecommendationItem, getDisplayName, getArtworkUrl, getDuration, getArtistName, getGenre } from '@/utils/musicUtils';
+import { formatTime, type EnrichedRecommendationItem, getDisplayName, getArtworkUrls, getDuration, getArtistName, getGenre } from '@/utils/musicUtils';
 
 interface SwipeCardProps {
     recommendations: EnrichedRecommendationItem[];
@@ -124,7 +124,7 @@ const SwipeCards = forwardRef<SwipeCardRef, SwipeCardProps>(({
 
     // Render individual card content with sleek design
     const renderCardContent = (item: EnrichedRecommendationItem) => {
-        const artworkUrl = getArtworkUrl(item);
+        const artworkUrls = getArtworkUrls(item);
         const displayName = getDisplayName(item);
         const artistName = getArtistName(item);
         const genre = getGenre(item);
@@ -134,32 +134,49 @@ const SwipeCards = forwardRef<SwipeCardRef, SwipeCardProps>(({
             <div className="h-full mb-1.5 overflow-hidden rounded-xl shadow-2xl">
                 <div className="h-full flex flex-col">
                     {/* Artwork Section */}
-                    <div className="flex-1 relative group">
-                        <div
-                            className="w-full h-full bg-cover bg-center relative overflow-hidden"
-                            style={{
-                                backgroundImage: artworkUrl ? `url(${artworkUrl})` : 'none'
-                            }}
-                        >
+                    <div className="flex-1 relative group swipe-card-artwork">
+                        <div className="w-full h-full relative overflow-hidden">
+                            {/* Responsive image with srcset for better performance */}
+                            <img
+                                src={artworkUrls.medium}
+                                srcSet={`
+                                    ${artworkUrls.small} 150w,
+                                    ${artworkUrls.medium} 300w,
+                                    ${artworkUrls.large} 600w
+                                `}
+                                sizes="(max-width: 400px) 150px, (max-width: 800px) 300px, 600px"
+                                alt={`${displayName} by ${artistName}`}
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                                onError={(e) => {
+                                    // Fallback to smaller size if larger fails
+                                    const target = e.target as HTMLImageElement;
+                                    if (target.src === artworkUrls.large && artworkUrls.medium !== artworkUrls.large) {
+                                        target.src = artworkUrls.medium;
+                                    } else if (target.src === artworkUrls.medium && artworkUrls.small !== artworkUrls.medium) {
+                                        target.src = artworkUrls.small;
+                                    }
+                                }}
+                            />
+
                             {/* Gradient Overlay */}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
                             {/* Hover Effect */}
                             <div className="absolute inset-0 bg-gradient-to-br from-brand-primary/20 via-transparent to-brand-secondary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                            {/* Fallback Icon */}
-                            {!artworkUrl && (
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                    <div className="text-center text-white p-6">
-                                        <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-brand-primary/30 to-brand-secondary/30 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/20">
-                                            <Music className="w-10 h-10 text-white" />
-                                        </div>
-                                        <h3 className="text-2xl font-bold">{displayName}</h3>
-                                    </div>
-                                </div>
-                            )}
-
                         </div>
+
+                        {/* Fallback Icon - only show when no artwork is available */}
+                        {!artworkUrls.large && (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="text-center text-white p-6">
+                                    <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-brand-primary/30 to-brand-secondary/30 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/20">
+                                        <Music className="w-10 h-10 text-white" />
+                                    </div>
+                                    <h3 className="text-2xl font-bold">{displayName}</h3>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Info Section */}
@@ -167,9 +184,6 @@ const SwipeCards = forwardRef<SwipeCardRef, SwipeCardProps>(({
                         <h3 className="text-xl font-bold text-card-foreground mb-1 line-clamp-1">
                             {displayName}
                         </h3>
-                        <p className="text-muted-foreground mb-4 line-clamp-1">
-                            {genre}
-                        </p>
                         <p className="text-muted-foreground mb-4 line-clamp-1">
                             {artistName}
                         </p>

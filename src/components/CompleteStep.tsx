@@ -19,6 +19,7 @@ const CompleteStep: React.FC<CompleteStepProps> = ({
 }) => {
     const { musicKit, handleApiError } = useMusicKit();
 
+
     const handleAddToLibrary = useCallback(async () => {
         if (!musicKit || selectedItems.length === 0) {
             console.error('MusicKit not available or no items selected');

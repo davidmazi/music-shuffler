@@ -3,6 +3,7 @@
   "outputDirectory": "dist",
   "installCommand": "bun install",
   "framework": "vite",
+
   "rewrites": [
     {
       "source": "/api/(.*)",

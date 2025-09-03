@@ -8,8 +8,6 @@ import {
 } from "@/utils/musicUtils";
 import DurationStep from "./DurationStep";
 import CompleteStep from "./CompleteStep";
-import LoadingState from "./LoadingState";
-
 import EmptyState from "./EmptyState";
 import SwipeInterface from "./SwipeInterface";
 
@@ -71,7 +69,22 @@ const Recommendations: React.FC = () => {
 
 
 	const handleSwipe = useCallback(
-		(direction: "left" | "right", item: EnrichedRecommendationItem) => {
+		async (direction: "left" | "right", item: EnrichedRecommendationItem) => {
+			// Find song that was just swiped, when swiping too fast the .skipToNextItem() function 
+			if (musicKit?.isPlaying) {
+				try {
+					musicKit.repeatMode = 0;
+
+					const queueItems = musicKit.queue.items
+					const currentSongIndexInQueue = queueItems.findIndex((queueItem) => queueItem.id === item.id)
+					await musicKit.changeToMediaAtIndex(currentSongIndexInQueue + 1)
+
+					musicKit.repeatMode = 1;
+				} catch (error) {
+					console.error('Failed to skip to next item:', error);
+				}
+			}
+
 			// Increment swiped count
 			setSwipedCount(prev => prev + 1);
 
@@ -81,22 +94,24 @@ const Recommendations: React.FC = () => {
 				// This will be updated when we flatten the songs from albums/playlists
 				setTotalDuration((prev) => prev + getDuration(item));
 			}
+
+
 		},
-		[],
-	); // Remove selectedItems.length dependency
+		[musicKit],
+	);
 
 	const resetPlaylist = useCallback(() => {
+		musicKit.stop()
 		setSelectedItems([]);
 		setRecommendations([]);
 		setTotalDuration(0);
 		setStep("duration");
 		setSwipedCount(0);
-	}, []);
+	}, [musicKit]);
 
 	const fetchMoreRecommendations = useCallback(async () => {
 		// Fetch new recommendations and append them to existing ones
 		if (musicKit && isAuthorized) {
-			console.log(`📥 Fetching more recommendations. Current count: ${recommendations.length}`);
 			setLoading(true);
 			setError(null);
 
@@ -105,16 +120,18 @@ const Recommendations: React.FC = () => {
 				handleApiError
 			});
 
+
+
 			if (result.error) {
 				setError(result.error);
 			} else {
 				setSwipedCount(0);
-				setRecommendations(() => [...result.recommendedItems]);
+				setRecommendations(result.recommendedItems);
 			}
 
 			setLoading(false);
 		}
-	}, [musicKit, isAuthorized, handleApiError, recommendations.length]);
+	}, [musicKit, isAuthorized, handleApiError]);
 
 	const handleDurationNext = useCallback(() => {
 		setStep("swipe");
@@ -138,19 +155,14 @@ const Recommendations: React.FC = () => {
 		return <CompleteStep onReset={resetPlaylist} selectedItems={selectedItems} />;
 	}
 
-	if (loading) {
-		return <LoadingState />;
-	}
-
-
-	if (recommendations.length === 0) {
+	if (!loading && recommendations.length === 0) {
 		return <EmptyState />;
 	}
 
 	return (
 		<SwipeInterface
+			loading={loading}
 			recommendations={recommendations}
-			selectedItems={selectedItems}
 			totalDuration={totalDuration}
 			targetSeconds={targetSeconds}
 			onSwipe={handleSwipe}
