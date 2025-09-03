@@ -57,7 +57,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
     return (
         <div className="min-h-screen flex flex-col max-w-md mx-auto">
             {/* Header */}
-            <div className="p-6">
+            <div className="px-6">
                 <ProgressHeader
                     totalDuration={totalDuration}
                     targetSeconds={targetSeconds}
@@ -108,7 +108,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
             })}
 
             {/* Card Stack - Give proper height for cards */}
-            <div className="flex-1 flex items-center justify-center px-6 mb-10">
+            <div className="flex-1 flex items-center justify-center px-6 my-10">
                 {loading ? <LoadingState /> : <SwipeCards
                     key="swipe-cards-stable"
                     ref={swipeCardRef}

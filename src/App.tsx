@@ -36,7 +36,7 @@ function AppContent() {
             onClick={unauthorize}
             disabled={isAuthenticating}
             variant="glass"
-            className="fixed top-6 right-6 z-50 text-foreground hover:bg-glass-bg/80 transition-all duration-300"
+            className="fixed mt-0.5 right-6 z-50 text-foreground hover:bg-glass-bg/80 transition-all duration-300"
             size="sm"
           >
             <LogOut className="w-4 h-4 mr-2" />
