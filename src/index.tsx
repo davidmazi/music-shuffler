@@ -1,6 +1,7 @@
 import { serve } from "bun";
 import index from "./index.html";
 import { networkInterfaces } from "node:os";
+import QRCode from "qrcode";
 
 const server = serve({
   hostname: "0.0.0.0", // Bind to all network interfaces
@@ -42,4 +43,21 @@ const server = serve({
 });
 
 console.log(`🚀 Server running at ${server.url}`);
-console.log(`📱 Access from phone: http://${Object.values(networkInterfaces()).flat().find(ni => ni?.family === 'IPv4' && !ni?.internal)?.address || 'localhost'}:3000`);
+
+// Generate QR code for mobile access
+const localIP = Object.values(networkInterfaces()).flat().find(ni => ni?.family === 'IPv4' && !ni?.internal)?.address || 'localhost';
+const mobileURL = `http://${localIP}:3000`;
+
+console.log(`📱 Access from phone: ${mobileURL}`);
+
+// Generate and display QR code
+try {
+  const qrCodeString = await QRCode.toString(mobileURL, {
+    type: 'terminal',
+    small: true,
+    margin: 1
+  });
+  console.log(`\n📱 Scan this QR code to access the app on your phone:\n${qrCodeString}`);
+} catch (error) {
+  console.error('Failed to generate QR code:', error);
+}
