@@ -12,7 +12,6 @@
     "build": "bun run build.ts",
     "build:debug": "bun run build.ts --source-map=linked",
     "vercel-build": "bun run build.ts",
-
     "lint": "eslint src --ext .ts,.tsx,.js,.jsx",
     "lint:fix": "eslint src --ext .ts,.tsx,.js,.jsx --fix"
   },
@@ -23,6 +22,7 @@
     "@radix-ui/react-select": "^2.1.6",
     "@radix-ui/react-slot": "^1.1.2",
     "@react-spring/web": "^10.0.1",
+    "@types/qrcode": "^1.5.5",
     "bun-plugin-tailwind": "^0.0.14",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -30,6 +30,7 @@
     "framer-motion": "^12.23.9",
     "lucide-react": "^0.475.0",
     "motion": "^12.23.12",
+    "qrcode": "^1.5.4",
     "react": "^19",
     "react-dom": "^19",
     "react-hook-form": "^7.54.2",

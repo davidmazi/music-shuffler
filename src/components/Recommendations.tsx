@@ -70,6 +70,18 @@ const Recommendations: React.FC = () => {
 
 	const handleSwipe = useCallback(
 		async (direction: "left" | "right", item: EnrichedRecommendationItem) => {
+
+
+			// Increment swiped count
+			setSwipedCount(prev => prev + 1);
+
+			if (direction === "right") {
+				setSelectedItems((prev) => [...prev, item]);
+				// For now, we'll use a default duration since we don't have individual song durations yet
+				// This will be updated when we flatten the songs from albums/playlists
+				setTotalDuration((prev) => prev + getDuration(item));
+			}
+
 			// Find song that was just swiped, when swiping too fast the .skipToNextItem() function 
 			if (musicKit?.isPlaying) {
 				try {
@@ -84,17 +96,6 @@ const Recommendations: React.FC = () => {
 					console.error('Failed to skip to next item:', error);
 				}
 			}
-
-			// Increment swiped count
-			setSwipedCount(prev => prev + 1);
-
-			if (direction === "right") {
-				setSelectedItems((prev) => [...prev, item]);
-				// For now, we'll use a default duration since we don't have individual song durations yet
-				// This will be updated when we flatten the songs from albums/playlists
-				setTotalDuration((prev) => prev + getDuration(item));
-			}
-
 
 		},
 		[musicKit],
