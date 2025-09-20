@@ -23,26 +23,27 @@ function AppContent() {
         particleRGBColor={[168, 85, 247]}
       />
 
-      {/* Theme Toggle */}
-      <ThemeToggle />
+      <div className="flex place-content-between m-3">
+        {/* Theme Toggle */}
+        <ThemeToggle />
 
-
-
-      {/* Main content container */}
-      <div className="relative z-10 min-h-screen">
-        {/* Sleek sign out button */}
+        {/* Sign out button */}
         {isAuthorized && (
           <Button
             onClick={unauthorize}
             disabled={isAuthenticating}
             variant="glass"
-            className="fixed mt-0.5 right-6 z-50 text-foreground hover:bg-glass-bg/80 transition-all duration-300"
-            size="sm"
+            className="z-50 text-foreground hover:bg-glass-bg/80 transition-all duration-300"
           >
-            <LogOut className="w-4 h-4 mr-2" />
+            <LogOut />
             {isAuthenticating ? 'Signing Out...' : 'Sign Out'}
           </Button>
         )}
+      </div>
+
+      {/* Main content container */}
+      <div className="relative z-10 min-h-screen">
+
 
         {/* Main content */}
         {!isAuthorized ? (
