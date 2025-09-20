@@ -38,7 +38,7 @@ const ThemeToggle: React.FC = () => {
             onClick={toggleTheme}
             variant="glass"
             size="icon"
-            className="fixed top-6 left-6 z-50 text-foreground hover:bg-glass-bg/80 transition-all duration-300"
+            className="z-50 text-foreground hover:bg-glass-bg/80 transition-all duration-300"
         >
             <motion.div
                 initial={false}
